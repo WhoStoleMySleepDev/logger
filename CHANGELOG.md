@@ -1,3 +1,10 @@
+## [1.1.7](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.6...v1.1.7) (2026-03-03)
+
+
+### Bug Fixes
+
+* edit avg perf ([6ba5cb8](https://github.com/WhoStoleMySleepDev/logger/commit/6ba5cb8157016f7aff5b8b325cf3623c06ea85b4))
+
 ## [1.1.6](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.5...v1.1.6) (2026-03-03)
 
 
