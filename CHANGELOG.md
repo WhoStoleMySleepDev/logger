@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.1...v1.1.2) (2026-03-03)
+
+
+### Bug Fixes
+
+* trigger npm publish ([929c2c4](https://github.com/WhoStoleMySleepDev/logger/commit/929c2c479e2bb00fca0cf73eb5b87cd377be22c7))
+
 ## [1.1.1](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.0...v1.1.1) (2026-03-03)
 
 
