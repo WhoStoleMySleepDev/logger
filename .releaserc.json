@@ -1,11 +1,12 @@
 {
   "branches": ["main"],
-  "repositoryUrl": "https://github.com/WhoStoleMySleepDev/logging-util.git",
+  "repositoryUrl": "https://github.com/WhoStoleMySleepDev/logger.git",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
     "@semantic-release/npm",
+    "@semantic-release/github",
     [
       "@semantic-release/git",
       {
