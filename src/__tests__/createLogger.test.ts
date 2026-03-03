@@ -1,4 +1,12 @@
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  appendFileSync: jest.fn(),
+  mkdirSync: jest.fn(),
+  statSync: jest.fn().mockReturnValue({ size: 0 }),
+}));
+
 import { createLogger, Logger } from '../logger';
+import * as fs from 'node:fs';
 import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -32,7 +40,7 @@ describe('createLogger', () => {
   };
 
   beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation();
+    jest.clearAllMocks();
 
     // Clean up test config file if it exists
     if (existsSync(testConfigPath)) {
@@ -41,8 +49,6 @@ describe('createLogger', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
-
     // Clean up test config file
     if (existsSync(testConfigPath)) {
       unlinkSync(testConfigPath);
@@ -61,9 +67,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/direct.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/direct.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
 
@@ -76,9 +83,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/partial.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/partial.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
   });
@@ -95,9 +103,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/test-from-config.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/test-from-config.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
 
@@ -111,9 +120,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/test-dev.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/test-dev.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
 
       // Restore original env
@@ -140,9 +150,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/custom.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/custom.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
 
       // Clean up
@@ -184,9 +195,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/from-env.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/from-env.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
 
@@ -202,9 +214,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/direct-override.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/direct-override.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
   });
@@ -240,9 +253,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/direct-priority.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/direct-priority.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
 
@@ -254,9 +268,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/config-priority.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/config-priority.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
   });
@@ -269,9 +284,10 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(console.log).toHaveBeenCalledWith(
-        '[Logger: ./logs/app.log]',
-        expect.stringContaining('"level": "info"')
+      expect(fs.appendFileSync).toHaveBeenCalledWith(
+        resolve('./logs/app.log'),
+        expect.stringContaining('"level":"info"'),
+        'utf-8'
       );
     });
   });

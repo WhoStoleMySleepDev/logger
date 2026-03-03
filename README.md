@@ -8,7 +8,7 @@ A lightweight TypeScript logging utility for creating structured log files with 
 - 🎯 Multiple log levels (debug, info, warn, error)
 - 📁 Configurable log file paths
 - 🔄 Log rotation support
-- ⚙️ **Configuration files support** (JSON, JS, TS)
+- ⚙️ **Configuration files support** (JSON)
 - 🌍 **Environment variables support**
 - 🏭 **Environment-specific configurations**
 - 📦 TypeScript support with full type definitions
@@ -64,8 +64,6 @@ const logger = createLogger(undefined, './config/custom-logger.json');
 Create one of these files in your project root:
 
 - `logger.config.json`
-- `logger.config.js`
-- `logger.config.ts`
 - `.loggerrc.json`
 
 #### Example `logger.config.json`
@@ -111,6 +109,24 @@ LOG_FILE_PATH="./logs/custom.log" LOG_MAX_FILES=10 node app.js
 2. **Configuration file**
 3. **Environment variables**
 4. **Default values**
+
+## Log Format
+
+Each log entry is written as a single JSON line (JSONL) to the log file:
+
+```json
+{"timestamp":"2026-03-03T12:00:00.000Z","level":"info","message":"Application started"}
+{"timestamp":"2026-03-03T12:00:01.000Z","level":"error","message":"Something went wrong","data":{"userId":123}}
+```
+
+## Log Rotation
+
+Rotation is triggered **by file size** after each write. When the file exceeds `maxFileSize`:
+
+1. `app.log.5` is deleted (if `maxFiles` is 5)
+2. Existing rotated files are shifted: `.log.4` → `.log.5`, `.log.3` → `.log.4`, etc.
+3. Current file is renamed: `app.log` → `app.log.1`
+4. Next write creates a fresh `app.log`
 
 ## API
 
