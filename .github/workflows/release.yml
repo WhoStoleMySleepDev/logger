@@ -1,5 +1,10 @@
 name: Release
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 on:
   push:
     branches: [main]
@@ -8,34 +13,32 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
-      
+
       - name: Use Node.js 24.x
         uses: actions/setup-node@v4
         with:
           node-version: '24.x'
           cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run tests
         run: npm run test:coverage
-      
+
       - name: Run linting
         run: npm run lint
-      
+
       - name: Build project
         run: npm run build
-      
+
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
