@@ -1,5 +1,13 @@
-import { readFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import {
+  readFileSync,
+  existsSync,
+  appendFileSync,
+  mkdirSync,
+  statSync,
+  renameSync,
+  unlinkSync,
+} from 'fs';
+import { resolve, dirname } from 'path';
 
 /**
  * Logger utility for creating structured log files
@@ -55,10 +63,40 @@ export class Logger {
       data,
     };
 
-    // TODO: Implement file writing logic using this.options.logFilePath
-    // For now, just reference the options to avoid TypeScript warnings
-    const filePath = this.options.logFilePath;
-    console.log(`[Logger: ${filePath}]`, JSON.stringify(logEntry, null, 2));
+    const filePath = resolve(this.options.logFilePath);
+    const dir = dirname(filePath);
+
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+
+    appendFileSync(filePath, JSON.stringify(logEntry) + '\n', 'utf-8');
+    this.rotateIfNeeded(filePath);
+  }
+
+  private rotateIfNeeded(filePath: string): void {
+    const maxFileSize = this.options.maxFileSize ?? 10 * 1024 * 1024;
+    const maxFiles = this.options.maxFiles ?? 5;
+
+    if (!existsSync(filePath)) return;
+
+    const { size } = statSync(filePath);
+    if (size < maxFileSize) return;
+
+    const oldestPath = `${filePath}.${maxFiles}`;
+    if (existsSync(oldestPath)) {
+      unlinkSync(oldestPath);
+    }
+
+    for (let i = maxFiles - 1; i >= 1; i--) {
+      const src = `${filePath}.${i}`;
+      const dest = `${filePath}.${i + 1}`;
+      if (existsSync(src)) {
+        renameSync(src, dest);
+      }
+    }
+
+    renameSync(filePath, `${filePath}.1`);
   }
 
   public debug(message: string, data?: unknown): void {
