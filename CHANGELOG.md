@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.2...v1.1.3) (2026-03-03)
+
+
+### Bug Fixes
+
+* publish via OIDC trusted publisher ([6e50053](https://github.com/WhoStoleMySleepDev/logger/commit/6e500532fcd45b9832c6c88d4fa27f9511f09f39))
+
 ## [1.1.2](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.1...v1.1.2) (2026-03-03)
 
 
