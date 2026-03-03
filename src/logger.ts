@@ -23,8 +23,6 @@ export interface LogEntry {
 }
 
 export class Logger {
-  private readonly options: Required<LoggerOptions>;
-
   public constructor(options: LoggerOptions) {
     this.options = {
       maxFileSize: 10 * 1024 * 1024, // 10MB

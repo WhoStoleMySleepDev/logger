@@ -1,5 +1,5 @@
 {
-  "name": "@whostolemysleep/logging-util",
+  "name": "@wsm/logger",
   "version": "1.0.0",
   "description": "A lightweight TypeScript logging utility for creating structured log files",
   "main": "dist/index.js",
@@ -11,10 +11,10 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write src/**/*.ts",
-    "format:check": "prettier --check src/**/*.ts",
+    "lint": "biome lint src/**/*.ts",
+    "lint:fix": "biome lint --write src/**/*.ts",
+    "format": "biome format --write src/**/*.ts",
+    "format:check": "biome format src/**/*.ts",
     "prepare": "husky",
     "prepublishOnly": "npm run build && npm run test && npm run lint"
   },
@@ -34,22 +34,19 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
+      "biome lint --write",
+      "biome format --write"
     ]
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.5",
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.3.3",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^10.0.2",
     "husky": "^9.1.7",
     "jest": "^30.2.0",
     "lint-staged": "^16.3.1",
-    "prettier": "^3.8.1",
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

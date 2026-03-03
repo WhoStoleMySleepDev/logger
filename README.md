@@ -1,4 +1,4 @@
-# @whostolemysleep/logging-util
+# @wms/logger
 
 A lightweight TypeScript logging utility for creating structured log files.
 
