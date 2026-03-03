@@ -1,6 +1,17 @@
 import { createLogger, Logger } from '../logger';
-import { existsSync, unlinkSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync, unlinkSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      NODE_ENV?: string;
+      LOG_FILE_PATH?: string;
+      LOG_MAX_FILE_SIZE?: string;
+      LOG_MAX_FILES?: string;
+    }
+  }
+}
 
 describe('createLogger', () => {
   const testConfigPath = resolve(process.cwd(), 'logger.config.json');
@@ -91,8 +102,8 @@ describe('createLogger', () => {
     });
 
     it('should apply environment-specific config', () => {
-      const originalEnv = process.env['NODE_ENV'];
-      process.env['NODE_ENV'] = 'development';
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
 
       const logger = createLogger();
 
@@ -107,9 +118,9 @@ describe('createLogger', () => {
 
       // Restore original env
       if (originalEnv) {
-        process.env['NODE_ENV'] = originalEnv;
+        process.env.NODE_ENV = originalEnv;
       } else {
-        delete process.env['NODE_ENV'];
+        delete process.env.NODE_ENV;
       }
     });
 
@@ -144,10 +155,10 @@ describe('createLogger', () => {
 
     beforeEach(() => {
       originalEnv = {
-        LOG_FILE_PATH: process.env['LOG_FILE_PATH'],
-        LOG_MAX_FILE_SIZE: process.env['LOG_MAX_FILE_SIZE'],
-        LOG_MAX_FILES: process.env['LOG_MAX_FILES'],
-        NODE_ENV: process.env['NODE_ENV'],
+        LOG_FILE_PATH: process.env.LOG_FILE_PATH,
+        LOG_MAX_FILE_SIZE: process.env.LOG_MAX_FILE_SIZE,
+        LOG_MAX_FILES: process.env.LOG_MAX_FILES,
+        NODE_ENV: process.env.NODE_ENV,
       };
     });
 
@@ -163,9 +174,9 @@ describe('createLogger', () => {
     });
 
     it('should use environment variables for configuration', () => {
-      process.env['LOG_FILE_PATH'] = './logs/from-env.log';
-      process.env['LOG_MAX_FILE_SIZE'] = '8388608'; // 8MB
-      process.env['LOG_MAX_FILES'] = '12';
+      process.env.LOG_FILE_PATH = './logs/from-env.log';
+      process.env.LOG_MAX_FILE_SIZE = '8388608'; // 8MB
+      process.env.LOG_MAX_FILES = '12';
 
       const logger = createLogger();
 
@@ -180,8 +191,8 @@ describe('createLogger', () => {
     });
 
     it('should prioritize direct options over environment variables', () => {
-      process.env['LOG_FILE_PATH'] = './logs/from-env.log';
-      process.env['LOG_MAX_FILE_SIZE'] = '8388608';
+      process.env.LOG_FILE_PATH = './logs/from-env.log';
+      process.env.LOG_MAX_FILE_SIZE = '8388608';
 
       const logger = createLogger({
         logFilePath: './logs/direct-override.log',
@@ -201,8 +212,8 @@ describe('createLogger', () => {
   describe('priority order', () => {
     beforeEach(() => {
       // Set up environment variables
-      process.env['LOG_FILE_PATH'] = './logs/env-priority.log';
-      process.env['LOG_MAX_FILES'] = '20';
+      process.env.LOG_FILE_PATH = './logs/env-priority.log';
+      process.env.LOG_MAX_FILES = '20';
 
       // Set up config file
       writeFileSync(
@@ -217,8 +228,8 @@ describe('createLogger', () => {
 
     afterEach(() => {
       // Clean up environment variables
-      delete process.env['LOG_FILE_PATH'];
-      delete process.env['LOG_MAX_FILES'];
+      delete process.env.LOG_FILE_PATH;
+      delete process.env.LOG_MAX_FILES;
     });
 
     it('should prioritize: direct options > config file > env vars > defaults', () => {
@@ -237,7 +248,7 @@ describe('createLogger', () => {
 
     it('should use config file when no direct options provided', () => {
       // Remove logFilePath from env to test config file priority
-      delete process.env['LOG_FILE_PATH'];
+      delete process.env.LOG_FILE_PATH;
 
       const logger = createLogger();
 
