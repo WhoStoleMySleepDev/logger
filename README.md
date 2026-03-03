@@ -1,4 +1,4 @@
-# @whostolemysleep/logging-util
+# @wms/logger
 
 A lightweight TypeScript logging utility for creating structured log files.
 
@@ -15,13 +15,13 @@ A lightweight TypeScript logging utility for creating structured log files.
 ## Installation
 
 ```bash
-npm install @whostolemysleep/logging-util
+npm install @wms/logger
 ```
 
 ## Usage
 
 ```typescript
-import { Logger, LogLevel } from '@whostolemysleep/logging-util';
+import { Logger, LogLevel } from '@wms/logger';
 
 const logger = new Logger({
   logFilePath: './logs/app.log',
