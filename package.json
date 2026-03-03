@@ -24,6 +24,10 @@
     "utility",
     "file-logger"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WhoStoleMySleepDev/logger"
+  },
   "author": "whostolemysleep",
   "license": "MIT",
   "files": [
