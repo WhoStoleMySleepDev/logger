@@ -1,5 +1,5 @@
 {
-  "name": "@wsm/logger",
+  "name": "@wsms/logger",
   "version": "1.0.0",
   "description": "A lightweight TypeScript logging utility for creating structured log files",
   "main": "dist/index.js",

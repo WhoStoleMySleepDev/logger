@@ -1,4 +1,4 @@
-# @wsm/logger
+# @wsms/logger
 
 A lightweight TypeScript logging utility for creating structured log files with flexible configuration support.
 
@@ -18,7 +18,7 @@ A lightweight TypeScript logging utility for creating structured log files with 
 ## Installation
 
 ```bash
-npm install @wsm/logger
+npm install @wsms/logger
 ```
 
 ## Usage
@@ -26,7 +26,7 @@ npm install @wsm/logger
 ### Basic Usage
 
 ```typescript
-import { createLogger } from '@wsm/logger';
+import { createLogger } from '@wsms/logger';
 
 // Automatically loads configuration from config files
 const logger = createLogger();
@@ -38,7 +38,7 @@ logger.error('Something went wrong', { userId: 123 });
 ### With Direct Options
 
 ```typescript
-import { createLogger } from '@wsm/logger';
+import { createLogger } from '@wsms/logger';
 
 const logger = createLogger({
   logFilePath: './logs/app.log',
@@ -52,7 +52,7 @@ logger.info('Application started');
 ### With Custom Config Path
 
 ```typescript
-import { createLogger } from '@wsm/logger';
+import { createLogger } from '@wsms/logger';
 
 const logger = createLogger(undefined, './config/custom-logger.json');
 ```
@@ -156,7 +156,7 @@ constructor(options: LoggerOptions)
 ### Development vs Production
 
 ```typescript
-import { createLogger } from '@wsm/logger';
+import { createLogger } from '@wsms/logger';
 
 // Will automatically use environment-specific config
 const logger = createLogger();
