@@ -6,8 +6,10 @@ A lightweight TypeScript logging utility for creating structured log files with 
 
 - 📝 Structured logging with JSON format
 - 🎯 Multiple log levels (debug, info, warn, error)
+- ⚡ Async writes via WriteStream — non-blocking event loop (~700k logs/sec)
 - 📁 Configurable log file paths
 - 🔄 Log rotation support
+- 👶 Child loggers with inherited context
 - ⚙️ **Configuration files support** (JSON)
 - 🌍 **Environment variables support**
 - 🏭 **Environment-specific configurations**
@@ -55,6 +57,41 @@ logger.info('Application started');
 import { createLogger } from '@wsms/logger';
 
 const logger = createLogger(undefined, './config/custom-logger.json');
+```
+
+### Child Loggers
+
+Child loggers share the parent's stream and add default context fields to every entry:
+
+```typescript
+const logger = createLogger({ logFilePath: './logs/app.log' });
+
+const httpLogger = logger.child({ component: 'http' });
+const dbLogger   = logger.child({ component: 'db' });
+
+httpLogger.info('request received', { method: 'GET', path: '/users' });
+// → {"level":"info","message":"request received","component":"http","data":{...}}
+
+dbLogger.error('query failed');
+// → {"level":"error","message":"query failed","component":"db"}
+```
+
+Children can be nested — contexts merge:
+
+```typescript
+const reqLogger = httpLogger.child({ requestId: 'abc-123' });
+reqLogger.info('handler called');
+// → {..., "component":"http", "requestId":"abc-123"}
+```
+
+### Graceful Shutdown
+
+```typescript
+process.on('SIGTERM', async () => {
+  await logger.flush(); // wait for write buffer to drain
+  await logger.close(); // close the file descriptor
+  process.exit(0);
+});
 ```
 
 ## Configuration
@@ -115,8 +152,8 @@ LOG_FILE_PATH="./logs/custom.log" LOG_MAX_FILES=10 node app.js
 Each log entry is written as a single JSON line (JSONL) to the log file:
 
 ```json
-{"timestamp":"2026-03-03T12:00:00.000Z","level":"info","message":"Application started"}
-{"timestamp":"2026-03-03T12:00:01.000Z","level":"error","message":"Something went wrong","data":{"userId":123}}
+{"timestamp":"2026-03-04T12:00:00.000Z","level":"info","message":"Application started"}
+{"timestamp":"2026-03-04T12:00:01.000Z","level":"error","message":"Something went wrong","data":{"userId":123}}
 ```
 
 ## Log Rotation
@@ -159,6 +196,9 @@ constructor(options: LoggerOptions)
 - `info(message: string, data?: unknown): void`
 - `warn(message: string, data?: unknown): void`
 - `error(message: string, data?: unknown): void`
+- `child(context: Record<string, unknown>): Logger` — child logger with extra default fields
+- `flush(): Promise<void>` — wait for stream buffer to drain
+- `close(): Promise<void>` — close the file descriptor
 
 ### Log Levels
 

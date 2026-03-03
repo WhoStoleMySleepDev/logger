@@ -1,7 +1,8 @@
 jest.mock('fs', () => ({
   ...jest.requireActual('fs'),
-  appendFileSync: jest.fn(),
   mkdirSync: jest.fn(),
+  openSync: jest.fn().mockReturnValue(42),
+  createWriteStream: jest.fn(),
   statSync: jest.fn().mockReturnValue({ size: 0 }),
 }));
 
@@ -39,17 +40,30 @@ describe('createLogger', () => {
     },
   };
 
+  let mockStream: {
+    write: jest.Mock;
+    end: jest.Mock;
+    writableNeedDrain: boolean;
+    once: jest.Mock;
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
+    mockStream = {
+      write: jest.fn(),
+      end: jest.fn((cb?: () => void) => cb?.()),
+      writableNeedDrain: false,
+      once: jest.fn(),
+    };
+    (fs.createWriteStream as jest.Mock).mockReturnValue(mockStream);
+    (fs.statSync as jest.Mock).mockReturnValue({ size: 0 });
 
-    // Clean up test config file if it exists
     if (existsSync(testConfigPath)) {
       unlinkSync(testConfigPath);
     }
   });
 
   afterEach(() => {
-    // Clean up test config file
     if (existsSync(testConfigPath)) {
       unlinkSync(testConfigPath);
     }
@@ -67,10 +81,12 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/direct.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
 
@@ -83,10 +99,12 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/partial.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
   });
@@ -103,10 +121,12 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/test-from-config.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
 
@@ -120,13 +140,14 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/test-dev.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
 
-      // Restore original env
       if (originalEnv) {
         process.env.NODE_ENV = originalEnv;
       } else {
@@ -150,13 +171,14 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/custom.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
 
-      // Clean up
       unlinkSync(customConfigPath);
     });
   });
@@ -174,7 +196,6 @@ describe('createLogger', () => {
     });
 
     afterEach(() => {
-      // Restore original environment variables
       Object.keys(originalEnv).forEach((key) => {
         if (originalEnv[key]) {
           process.env[key] = originalEnv[key];
@@ -186,7 +207,7 @@ describe('createLogger', () => {
 
     it('should use environment variables for configuration', () => {
       process.env.LOG_FILE_PATH = './logs/from-env.log';
-      process.env.LOG_MAX_FILE_SIZE = '8388608'; // 8MB
+      process.env.LOG_MAX_FILE_SIZE = '8388608';
       process.env.LOG_MAX_FILES = '12';
 
       const logger = createLogger();
@@ -195,10 +216,12 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/from-env.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
 
@@ -214,21 +237,21 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/direct-override.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
   });
 
   describe('priority order', () => {
     beforeEach(() => {
-      // Set up environment variables
       process.env.LOG_FILE_PATH = './logs/env-priority.log';
       process.env.LOG_MAX_FILES = '20';
 
-      // Set up config file
       writeFileSync(
         testConfigPath,
         JSON.stringify({
@@ -240,38 +263,39 @@ describe('createLogger', () => {
     });
 
     afterEach(() => {
-      // Clean up environment variables
       delete process.env.LOG_FILE_PATH;
       delete process.env.LOG_MAX_FILES;
     });
 
     it('should prioritize: direct options > config file > env vars > defaults', () => {
-      // Direct options should win
       const logger = createLogger({
         logFilePath: './logs/direct-priority.log',
       });
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/direct-priority.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
 
     it('should use config file when no direct options provided', () => {
-      // Remove logFilePath from env to test config file priority
       delete process.env.LOG_FILE_PATH;
 
       const logger = createLogger();
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/config-priority.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
   });
@@ -284,10 +308,12 @@ describe('createLogger', () => {
 
       logger.info('Test message');
 
-      expect(fs.appendFileSync).toHaveBeenCalledWith(
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
         resolve('./logs/app.log'),
-        expect.stringContaining('"level":"info"'),
-        'utf-8'
+        { fd: 42, autoClose: true }
+      );
+      expect(mockStream.write).toHaveBeenCalledWith(
+        expect.stringContaining('"level":"info"')
       );
     });
   });
