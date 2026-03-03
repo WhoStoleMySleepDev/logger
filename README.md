@@ -6,7 +6,7 @@ A lightweight TypeScript logging utility for creating structured log files with 
 
 - 📝 Structured logging with JSON format
 - 🎯 Multiple log levels (debug, info, warn, error)
-- ⚡ Async writes via WriteStream — non-blocking event loop (~700k logs/sec)
+- ⚡ Async writes via WriteStream — non-blocking event loop (~280k logs/sec)
 - 📁 Configurable log file paths
 - 🔄 Log rotation support
 - 👶 Child loggers with inherited context
