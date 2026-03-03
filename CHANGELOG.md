@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.3...v1.1.4) (2026-03-03)
+
+
+### Bug Fixes
+
+* add repository url to package.json for OIDC provenance ([f04a6b7](https://github.com/WhoStoleMySleepDev/logger/commit/f04a6b70ee1a5f0e694a755e2c2564e49c9886dc))
+
 ## [1.1.3](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.2...v1.1.3) (2026-03-03)
 
 
