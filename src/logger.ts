@@ -23,6 +23,8 @@ export interface LogEntry {
 }
 
 export class Logger {
+  private options: LoggerOptions;
+
   public constructor(options: LoggerOptions) {
     this.options = {
       maxFileSize: 10 * 1024 * 1024, // 10MB
@@ -39,8 +41,10 @@ export class Logger {
       data,
     };
 
-    // TODO: Implement file writing logic
-    console.log(JSON.stringify(logEntry, null, 2));
+    // TODO: Implement file writing logic using this.options.logFilePath
+    // For now, just reference the options to avoid TypeScript warnings
+    const filePath = this.options.logFilePath;
+    console.log(`[Logger: ${filePath}]`, JSON.stringify(logEntry, null, 2));
   }
 
   public debug(message: string, data?: unknown): void {

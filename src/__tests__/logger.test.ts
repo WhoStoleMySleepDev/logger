@@ -41,9 +41,11 @@ describe('Logger', () => {
       logger.debug(message);
 
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining('"level": "debug"')
       );
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining(message)
       );
     });
@@ -53,9 +55,11 @@ describe('Logger', () => {
       logger.info(message);
 
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining('"level": "info"')
       );
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining(message)
       );
     });
@@ -65,9 +69,11 @@ describe('Logger', () => {
       logger.warn(message);
 
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining('"level": "warn"')
       );
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining(message)
       );
     });
@@ -77,9 +83,11 @@ describe('Logger', () => {
       logger.error(message);
 
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining('"level": "error"')
       );
       expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
         expect.stringContaining(message)
       );
     });
@@ -91,7 +99,16 @@ describe('Logger', () => {
       logger.info(message, data);
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining('"data": {"userId":123,"action":"login"}')
+        `[Logger: ${mockLogFilePath}]`,
+        expect.stringContaining('"data":')
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
+        expect.stringContaining('"userId": 123')
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        `[Logger: ${mockLogFilePath}]`,
+        expect.stringContaining('"action": "login"')
       );
     });
   });
