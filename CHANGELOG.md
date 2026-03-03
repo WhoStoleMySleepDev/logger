@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.5...v1.1.6) (2026-03-03)
+
+
+### Performance Improvements
+
+* optimize write ([#14](https://github.com/WhoStoleMySleepDev/logger/issues/14)) ([0cc8128](https://github.com/WhoStoleMySleepDev/logger/commit/0cc812814d427b70c117c0b5c64878036677ab23))
+
 ## [1.1.5](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.4...v1.1.5) (2026-03-03)
 
 
