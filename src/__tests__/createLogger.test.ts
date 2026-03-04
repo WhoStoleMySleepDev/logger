@@ -4,6 +4,7 @@ jest.mock('fs', () => ({
   openSync: jest.fn().mockReturnValue(42),
   createWriteStream: jest.fn(),
   statSync: jest.fn().mockReturnValue({ size: 0 }),
+  readdirSync: jest.fn().mockReturnValue([]),
 }));
 
 import { createLogger, Logger } from '../logger';
@@ -18,6 +19,8 @@ declare global {
       LOG_FILE_PATH?: string;
       LOG_MAX_FILE_SIZE?: string;
       LOG_MAX_FILES?: string;
+      LOG_ROTATE_BY_DATE?: string;
+      LOG_MAX_DAYS?: string;
     }
   }
 }
@@ -46,6 +49,15 @@ describe('createLogger', () => {
     writableNeedDrain: boolean;
     once: jest.Mock;
   };
+
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-04T10:00:00Z'));
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -82,7 +94,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/direct.log'),
+        resolve('./logs/direct-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -100,11 +112,25 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/partial.log'),
+        resolve('./logs/partial-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
         expect.stringContaining('"level":"info"')
+      );
+    });
+
+    it('should use plain path when rotateByDate is false', () => {
+      const logger = createLogger({
+        logFilePath: './logs/direct.log',
+        rotateByDate: false,
+      });
+
+      logger.info('Test message');
+
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
+        resolve('./logs/direct.log'),
+        { fd: 42, autoClose: true }
       );
     });
   });
@@ -122,7 +148,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/test-from-config.log'),
+        resolve('./logs/test-from-config-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -141,7 +167,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/test-dev.log'),
+        resolve('./logs/test-dev-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -172,7 +198,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/custom.log'),
+        resolve('./logs/custom-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -191,6 +217,8 @@ describe('createLogger', () => {
         LOG_FILE_PATH: process.env.LOG_FILE_PATH,
         LOG_MAX_FILE_SIZE: process.env.LOG_MAX_FILE_SIZE,
         LOG_MAX_FILES: process.env.LOG_MAX_FILES,
+        LOG_ROTATE_BY_DATE: process.env.LOG_ROTATE_BY_DATE,
+        LOG_MAX_DAYS: process.env.LOG_MAX_DAYS,
         NODE_ENV: process.env.NODE_ENV,
       };
     });
@@ -217,7 +245,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/from-env.log'),
+        resolve('./logs/from-env-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -238,11 +266,24 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/direct-override.log'),
+        resolve('./logs/direct-override-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
         expect.stringContaining('"level":"info"')
+      );
+    });
+
+    it('should disable date rotation via LOG_ROTATE_BY_DATE=false', () => {
+      process.env.LOG_FILE_PATH = './logs/no-date.log';
+      process.env.LOG_ROTATE_BY_DATE = 'false';
+
+      const logger = createLogger();
+      logger.info('test');
+
+      expect(fs.createWriteStream).toHaveBeenCalledWith(
+        resolve('./logs/no-date.log'),
+        { fd: 42, autoClose: true }
       );
     });
   });
@@ -275,7 +316,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/direct-priority.log'),
+        resolve('./logs/direct-priority-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -291,7 +332,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/config-priority.log'),
+        resolve('./logs/config-priority-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
@@ -309,7 +350,7 @@ describe('createLogger', () => {
       logger.info('Test message');
 
       expect(fs.createWriteStream).toHaveBeenCalledWith(
-        resolve('./logs/app.log'),
+        resolve('./logs/app-2026-03-04.log'),
         { fd: 42, autoClose: true }
       );
       expect(mockStream.write).toHaveBeenCalledWith(
