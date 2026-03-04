@@ -159,16 +159,18 @@ export class Logger {
     }
   }
 
-  private writeEntry(line: string): void {
+  private writeEntry(line: string, today?: string): void {
     if (this.rotateByDate) {
-      const today = new Date().toISOString().slice(0, 10);
-      if (today !== this.currentDate) {
-        this.rotateDateFile(today);
+      const nextDate = today ?? new Date().toISOString().slice(0, 10);
+      if (nextDate !== this.currentDate) {
+        this.rotateDateFile(nextDate);
       }
     }
 
     this.init();
-    this.stream!.write(line);
+    const stream = this.stream;
+    if (!stream) return;
+    stream.write(line);
     this.currentSize += Buffer.byteLength(line, 'utf-8');
 
     if (
@@ -180,8 +182,9 @@ export class Logger {
   }
 
   public log(level: LogLevel, message: string, data?: unknown): void {
+    const timestamp = new Date().toISOString();
     const entry: Record<string, unknown> = {
-      timestamp: new Date().toISOString(),
+      timestamp,
       level,
       message,
       ...this.context,
@@ -190,7 +193,7 @@ export class Logger {
       entry['data'] = data;
     }
     const line = JSON.stringify(entry) + '\n';
-    this.root.writeEntry(line);
+    this.root.writeEntry(line, timestamp.slice(0, 10));
   }
 
   private rotate(): void {
@@ -360,10 +363,7 @@ export function createLogger(
       ...fileConfig,
     };
 
-    if (
-      fileConfig.env &&
-      fileConfig.env[nodeEnv as keyof typeof fileConfig.env]
-    ) {
+    if (fileConfig.env?.[nodeEnv as keyof typeof fileConfig.env]) {
       Object.assign(
         baseConfig,
         fileConfig.env[nodeEnv as keyof typeof fileConfig.env]
