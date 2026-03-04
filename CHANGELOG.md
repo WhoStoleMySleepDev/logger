@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/WhoStoleMySleepDev/logger/compare/v1.2.1...v1.2.2) (2026-03-04)
+
+
+### Bug Fixes
+
+* Update issue templates ([435a5ac](https://github.com/WhoStoleMySleepDev/logger/commit/435a5ac8e56757c5e24e1259889a8e69045964b3))
+
 ## [1.2.1](https://github.com/WhoStoleMySleepDev/logger/compare/v1.2.0...v1.2.1) (2026-03-04)
 
 
