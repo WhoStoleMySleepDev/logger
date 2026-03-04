@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.7...v1.2.0) (2026-03-04)
+
+
+### Features
+
+* make date filename logs ([#15](https://github.com/WhoStoleMySleepDev/logger/issues/15)) ([19cea33](https://github.com/WhoStoleMySleepDev/logger/commit/19cea33ec397f3543f5d3f72609fb4d47f15176d))
+
 ## [1.1.7](https://github.com/WhoStoleMySleepDev/logger/compare/v1.1.6...v1.1.7) (2026-03-03)
 
 
