@@ -5,11 +5,12 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
+  readdirSync,
   renameSync,
   statSync,
   unlinkSync,
 } from 'fs';
-import { dirname, resolve } from 'path';
+import { basename, dirname, extname, join, resolve } from 'path';
 
 /**
  * Logger utility for creating structured log files
@@ -17,8 +18,24 @@ import { dirname, resolve } from 'path';
 
 export interface LoggerOptions {
   logFilePath: string;
+  /**
+   * Maximum file size in bytes before rotating.
+   * When rotateByDate is true, rotation happens within the daily file.
+   * @default undefined (no limit)
+   */
   maxFileSize?: number;
   maxFiles?: number;
+  /**
+   * Rotate log file daily, naming files app-YYYY-MM-DD.log.
+   * @default true
+   */
+  rotateByDate?: boolean;
+  /**
+   * Maximum number of daily log files to keep.
+   * Older files are deleted on each daily rotation.
+   * @default undefined (no limit)
+   */
+  maxDays?: number;
 }
 
 export interface LoggerConfig extends LoggerOptions {
@@ -49,8 +66,12 @@ export interface LogEntry {
 export class Logger {
   private readonly filePath: string;
   private readonly dir: string;
-  private readonly maxFileSize: number;
+  private readonly maxFileSize: number | undefined;
   private readonly maxFiles: number;
+  private readonly rotateByDate: boolean;
+  private readonly maxDays: number | undefined;
+  private activeFilePath: string;
+  private currentDate: string;
   private stream: WriteStream | null = null;
   private currentSize = 0;
   private initialized = false;
@@ -61,12 +82,24 @@ export class Logger {
     options: LoggerOptions,
     context: Record<string, unknown> = {}
   ) {
-    this.maxFileSize = options.maxFileSize ?? 10 * 1024 * 1024;
+    this.maxFileSize = options.maxFileSize;
     this.maxFiles = options.maxFiles ?? 5;
+    this.rotateByDate = options.rotateByDate ?? true;
+    this.maxDays = options.maxDays;
     this.filePath = resolve(options.logFilePath);
     this.dir = dirname(this.filePath);
     this.context = context;
     this.root = this;
+    this.currentDate = new Date().toISOString().slice(0, 10);
+    this.activeFilePath = this.rotateByDate
+      ? this.getDateFilePath(this.currentDate)
+      : this.filePath;
+  }
+
+  private getDateFilePath(date: string): string {
+    const ext = extname(this.filePath);
+    if (!ext) return `${this.filePath}-${date}`;
+    return `${this.filePath.slice(0, -ext.length)}-${date}${ext}`;
   }
 
   private init(): void {
@@ -76,25 +109,72 @@ export class Logger {
       mkdirSync(this.dir, { recursive: true });
     }
 
-    this.currentSize = existsSync(this.filePath)
-      ? statSync(this.filePath).size
+    this.currentSize = existsSync(this.activeFilePath)
+      ? statSync(this.activeFilePath).size
       : 0;
 
     // Open the file synchronously so it exists on disk before any rotation
     // attempt. createWriteStream's own open() is async and would create a race
     // condition in tight synchronous loops where rotate() is called before the
     // file is physically created.
-    const fd = openSync(this.filePath, 'a');
-    this.stream = createWriteStream(this.filePath, { fd, autoClose: true });
+    const fd = openSync(this.activeFilePath, 'a');
+    this.stream = createWriteStream(this.activeFilePath, {
+      fd,
+      autoClose: true,
+    });
     this.initialized = true;
   }
 
+  private rotateDateFile(newDate: string): void {
+    this.stream?.end();
+    this.stream = null;
+    this.initialized = false;
+    this.currentDate = newDate;
+    this.activeFilePath = this.getDateFilePath(newDate);
+    this.currentSize = 0;
+    this.cleanupOldDays();
+  }
+
+  private cleanupOldDays(): void {
+    if (!this.maxDays) return;
+
+    const ext = extname(this.filePath);
+    const base = basename(this.filePath, ext);
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - this.maxDays);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    const toDelete = readdirSync(this.dir).filter((f) => {
+      if (!f.startsWith(`${base}-`)) return false;
+      if (ext && !f.endsWith(ext)) return false;
+      const dateStr = ext
+        ? f.slice(base.length + 1, -ext.length)
+        : f.slice(base.length + 1);
+      return /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && dateStr < cutoffStr;
+    });
+
+    for (const file of toDelete) {
+      unlinkSync(join(this.dir, file));
+    }
+  }
+
   private writeEntry(line: string): void {
+    if (this.rotateByDate) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (today !== this.currentDate) {
+        this.rotateDateFile(today);
+      }
+    }
+
     this.init();
     this.stream!.write(line);
     this.currentSize += Buffer.byteLength(line, 'utf-8');
 
-    if (this.currentSize >= this.maxFileSize) {
+    if (
+      this.maxFileSize !== undefined &&
+      this.currentSize >= this.maxFileSize
+    ) {
       this.rotate();
     }
   }
@@ -118,20 +198,21 @@ export class Logger {
     this.stream = null;
     this.initialized = false;
 
-    const oldestPath = `${this.filePath}.${this.maxFiles}`;
+    const base = this.activeFilePath;
+    const oldestPath = `${base}.${this.maxFiles}`;
     if (existsSync(oldestPath)) {
       unlinkSync(oldestPath);
     }
 
     for (let i = this.maxFiles - 1; i >= 1; i--) {
-      const src = `${this.filePath}.${i}`;
-      const dest = `${this.filePath}.${i + 1}`;
+      const src = `${base}.${i}`;
+      const dest = `${base}.${i + 1}`;
       if (existsSync(src)) {
         renameSync(src, dest);
       }
     }
 
-    renameSync(this.filePath, `${this.filePath}.1`);
+    renameSync(base, `${base}.1`);
     this.currentSize = 0;
   }
 
@@ -140,14 +221,18 @@ export class Logger {
    * its write stream, with additional default context fields.
    */
   public child(context: Record<string, unknown>): Logger {
-    const child = new Logger(
-      {
-        logFilePath: this.filePath,
-        maxFileSize: this.maxFileSize,
-        maxFiles: this.maxFiles,
-      },
-      { ...this.context, ...context }
-    );
+    const childOptions: LoggerOptions = {
+      logFilePath: this.filePath,
+      maxFiles: this.maxFiles,
+      rotateByDate: this.rotateByDate,
+    };
+    if (this.maxFileSize !== undefined) {
+      childOptions.maxFileSize = this.maxFileSize;
+    }
+    if (this.maxDays !== undefined) {
+      childOptions.maxDays = this.maxDays;
+    }
+    const child = new Logger(childOptions, { ...this.context, ...context });
     child.root = this.root;
     return child;
   }
@@ -240,6 +325,14 @@ function getEnvConfig(): Partial<LoggerOptions> {
     config.maxFiles = parseInt(process.env['LOG_MAX_FILES'], 10);
   }
 
+  if (process.env['LOG_ROTATE_BY_DATE'] !== undefined) {
+    config.rotateByDate = process.env['LOG_ROTATE_BY_DATE'] !== 'false';
+  }
+
+  if (process.env['LOG_MAX_DAYS']) {
+    config.maxDays = parseInt(process.env['LOG_MAX_DAYS'], 10);
+  }
+
   return config;
 }
 
@@ -258,13 +351,11 @@ export function createLogger(
 
   if (options) {
     finalOptions = {
-      maxFileSize: 10 * 1024 * 1024,
       maxFiles: 5,
       ...options,
     } as LoggerOptions;
   } else if (fileConfig) {
     const baseConfig = {
-      maxFileSize: 10 * 1024 * 1024,
       maxFiles: 5,
       ...fileConfig,
     };
@@ -284,7 +375,6 @@ export function createLogger(
   } else {
     finalOptions = {
       logFilePath: './logs/app.log',
-      maxFileSize: 10 * 1024 * 1024,
       maxFiles: 5,
       ...envConfig,
       ...(options || {}),

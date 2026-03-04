@@ -7,6 +7,7 @@ jest.mock('fs', () => ({
   statSync: jest.fn().mockReturnValue({ size: 0 }),
   renameSync: jest.fn(),
   unlinkSync: jest.fn(),
+  readdirSync: jest.fn().mockReturnValue([]),
 }));
 
 import { Logger, LogLevel } from '../logger';
@@ -16,6 +17,7 @@ import { resolve } from 'node:path';
 describe('Logger', () => {
   const mockLogFilePath = '/tmp/test.log';
   const resolvedPath = resolve(mockLogFilePath);
+  const resolvedDatePath = resolvedPath.replace('.log', '-2026-03-04.log');
 
   let mockStream: {
     write: jest.Mock;
@@ -23,6 +25,15 @@ describe('Logger', () => {
     writableNeedDrain: boolean;
     once: jest.Mock;
   };
+
+  beforeAll(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-03-04T10:00:00Z'));
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -132,8 +143,22 @@ describe('Logger', () => {
       expect(content).not.toContain('"data"');
     });
 
-    it('should open stream to the resolved log file path', () => {
+    it('should open stream to the date-stamped log file path by default', () => {
       logger.info('test');
+
+      expect(fs.openSync).toHaveBeenCalledWith(resolvedDatePath, 'a');
+      expect(fs.createWriteStream).toHaveBeenCalledWith(resolvedDatePath, {
+        fd: 42,
+        autoClose: true,
+      });
+    });
+
+    it('should open stream to the plain path when rotateByDate is false', () => {
+      const logger2 = new Logger({
+        logFilePath: mockLogFilePath,
+        rotateByDate: false,
+      });
+      logger2.info('test');
 
       expect(fs.openSync).toHaveBeenCalledWith(resolvedPath, 'a');
       expect(fs.createWriteStream).toHaveBeenCalledWith(resolvedPath, {
@@ -161,16 +186,16 @@ describe('Logger', () => {
     });
   });
 
-  describe('log rotation', () => {
+  describe('log rotation (size-based)', () => {
     it('should rotate when cumulative size exceeds maxFileSize', () => {
       const maxFileSize = 1024;
       const logger = new Logger({
         logFilePath: mockLogFilePath,
         maxFileSize,
         maxFiles: 3,
+        rotateByDate: false,
       });
 
-      // Start with size just under the limit; one write pushes it over
       (fs.statSync as jest.Mock).mockReturnValue({ size: maxFileSize - 1 });
 
       logger.info('trigger rotation');
@@ -185,9 +210,23 @@ describe('Logger', () => {
       const logger = new Logger({
         logFilePath: mockLogFilePath,
         maxFileSize: 10 * 1024 * 1024,
+        rotateByDate: false,
       });
 
       (fs.statSync as jest.Mock).mockReturnValue({ size: 100 });
+
+      logger.info('no rotation');
+
+      expect(fs.renameSync).not.toHaveBeenCalled();
+    });
+
+    it('should not rotate when maxFileSize is not set', () => {
+      const logger = new Logger({
+        logFilePath: mockLogFilePath,
+        rotateByDate: false,
+      });
+
+      (fs.statSync as jest.Mock).mockReturnValue({ size: 999999999 });
 
       logger.info('no rotation');
 
@@ -200,6 +239,7 @@ describe('Logger', () => {
         logFilePath: mockLogFilePath,
         maxFileSize: 1,
         maxFiles,
+        rotateByDate: false,
       });
 
       (fs.statSync as jest.Mock).mockReturnValue({ size: 2 });
@@ -213,6 +253,7 @@ describe('Logger', () => {
       const logger = new Logger({
         logFilePath: mockLogFilePath,
         maxFileSize: 1,
+        rotateByDate: false,
       });
 
       (fs.statSync as jest.Mock).mockReturnValue({ size: 2 });
@@ -221,6 +262,82 @@ describe('Logger', () => {
       logger.info('second write uses new stream');
 
       expect(fs.createWriteStream).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('date rotation', () => {
+    it('should write to date-stamped file by default', () => {
+      const logger = new Logger({ logFilePath: mockLogFilePath });
+      logger.info('test');
+
+      expect(fs.openSync).toHaveBeenCalledWith(resolvedDatePath, 'a');
+    });
+
+    it('should rotate to new date file when day changes', () => {
+      const logger = new Logger({ logFilePath: mockLogFilePath });
+      logger.info('day 1');
+
+      jest.setSystemTime(new Date('2026-03-05T10:00:00Z'));
+      logger.info('day 2');
+      jest.setSystemTime(new Date('2026-03-04T10:00:00Z'));
+
+      const nextDatePath = resolvedPath.replace('.log', '-2026-03-05.log');
+      expect(fs.openSync).toHaveBeenNthCalledWith(1, resolvedDatePath, 'a');
+      expect(fs.openSync).toHaveBeenNthCalledWith(2, nextDatePath, 'a');
+      expect(fs.createWriteStream).toHaveBeenCalledTimes(2);
+    });
+
+    it('should rotate size within a date file when maxFileSize is set', () => {
+      const logger = new Logger({
+        logFilePath: mockLogFilePath,
+        maxFileSize: 1,
+      });
+
+      (fs.statSync as jest.Mock).mockReturnValue({ size: 2 });
+
+      logger.info('trigger size rotation');
+
+      expect(fs.renameSync).toHaveBeenCalledWith(
+        resolvedDatePath,
+        `${resolvedDatePath}.1`
+      );
+    });
+
+    it('should delete old files when maxDays is set', () => {
+      (fs.readdirSync as jest.Mock).mockReturnValue([
+        'test-2026-02-28.log',
+        'test-2026-03-03.log',
+        'test-2026-03-04.log',
+        'unrelated.log',
+      ]);
+
+      const logger = new Logger({
+        logFilePath: mockLogFilePath,
+        maxDays: 2,
+      });
+
+      jest.setSystemTime(new Date('2026-03-05T10:00:00Z'));
+      logger.info('day 2');
+      jest.setSystemTime(new Date('2026-03-04T10:00:00Z'));
+
+      expect(fs.unlinkSync).toHaveBeenCalledWith(
+        expect.stringContaining('test-2026-02-28.log')
+      );
+      expect(fs.unlinkSync).not.toHaveBeenCalledWith(
+        expect.stringContaining('test-2026-03-03.log')
+      );
+    });
+
+    it('should not delete files when maxDays is not set', () => {
+      (fs.readdirSync as jest.Mock).mockReturnValue(['test-2026-01-01.log']);
+
+      const logger = new Logger({ logFilePath: mockLogFilePath });
+
+      jest.setSystemTime(new Date('2026-03-05T10:00:00Z'));
+      logger.info('day 2');
+      jest.setSystemTime(new Date('2026-03-04T10:00:00Z'));
+
+      expect(fs.unlinkSync).not.toHaveBeenCalled();
     });
   });
 
