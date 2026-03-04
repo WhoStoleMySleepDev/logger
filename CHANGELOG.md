@@ -1,3 +1,10 @@
+## [1.2.4](https://github.com/WhoStoleMySleepDev/logger/compare/v1.2.3...v1.2.4) (2026-03-04)
+
+
+### Bug Fixes
+
+* fix readme.md ([bcb700c](https://github.com/WhoStoleMySleepDev/logger/commit/bcb700c071d14a1efe241765dcbf78f59efb914e))
+
 ## [1.2.3](https://github.com/WhoStoleMySleepDev/logger/compare/v1.2.2...v1.2.3) (2026-03-04)
 
 
