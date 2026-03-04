@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/WhoStoleMySleepDev/logger/compare/v1.2.2...v1.2.3) (2026-03-04)
+
+
+### Bug Fixes
+
+* Create CONTRIBUTING.md ([2ebcdb4](https://github.com/WhoStoleMySleepDev/logger/commit/2ebcdb4bbb868aadc98591eda71192807a3c53c3))
+
 ## [1.2.2](https://github.com/WhoStoleMySleepDev/logger/compare/v1.2.1...v1.2.2) (2026-03-04)
 
 
